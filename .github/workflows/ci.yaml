@@ -36,7 +36,8 @@ jobs:
         shell: bash
         run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          echo "$PWD/depot_tools" >> $GITHUB_PATH
+          echo "$(pwd)/depot_tools" >> $GITHUB_PATH      
+        working-directory: ${{ env.HOME }}
 
       - run: fetch dart
       - name: Configure build
@@ -44,7 +45,7 @@ jobs:
         working-directory: sdk
       
       - name: Build runtime
-        run: ./tools/build.py --no-goma --mode release --arch x64 runtime_precompiled
+        run: ./tools/build.py --no-goma --mode release --arch x64 runtime runtime_precompiled
         working-directory: sdk
       
       - run: ls -Rlah sdk/${{ matrix.out-dir }}
