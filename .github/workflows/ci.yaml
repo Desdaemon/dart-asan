@@ -1,0 +1,51 @@
+name: CI
+on:
+  workflow_dispatch:  
+  push:
+    tags:
+      - v*
+env:
+  ASAN_OPTIONS: handle_segv=0:detect_leaks=1:detect_stack_use_after_return=0:disable_coredump=0:abort_on_error=1
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+jobs:
+  build-asan:      
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: ubuntu-latest
+            prefix: linux-x64
+            out-dir: out
+          - host: macos-latest
+            prefix: mac
+            out-dir: xcodebuild
+          - host: windows-latest
+            prefix: win
+            out-dir: out
+            # setup-dep: |
+            #   curl -L https://storage.googleapis.com/chrome-infra/depot_tools.zip -o depot_tools.zip
+            #   7z x depot_tools.zip -odepot_tools
+            #   echo "$PWD/depot_tools" >> $GITHUB_PATH
+    name: Build ASan-enabled Dart runtime
+    runs-on: ${{ matrix.host }}
+    env:
+      ASAN_SYMBOLIZER_PATH: tools/buildtools/${{ matrix.prefix }}/clang/bin/llvm-symbolizer
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get dependencies
+        shell: bash
+        run: |
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          echo "$PWD/depot_tools" >> $GITHUB_PATH
+
+      - run: fetch dart
+      - name: Configure build
+        run: ./tools/gn.py --mode release --arch x64 --sanitizer asan
+        working-directory: sdk
+      
+      - name: Build runtime
+        run: ./tools/build.py --no-goma --mode release --arch x64 runtime_precompiled
+        working-directory: sdk
+      
+      - run: ls -Rlah sdk/${{ matrix.out-dir }}
+        
