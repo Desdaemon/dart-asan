@@ -22,31 +22,35 @@ jobs:
           - host: windows-latest
             prefix: win
             out-dir: out
-            # setup-dep: |
-            #   curl -L https://storage.googleapis.com/chrome-infra/depot_tools.zip -o depot_tools.zip
-            #   7z x depot_tools.zip -odepot_tools
-            #   echo "$PWD/depot_tools" >> $GITHUB_PATH
     name: Build ASan-enabled Dart runtime
     runs-on: ${{ matrix.host }}
-    env:
-      ASAN_SYMBOLIZER_PATH: tools/buildtools/${{ matrix.prefix }}/clang/bin/llvm-symbolizer
+    # env:
+    #   ASAN_SYMBOLIZER_PATH: tools/buildtools/${{ matrix.prefix }}/clang/bin/llvm-symbolizer
     defaults:
       run:
         shell: bash
     steps:
+      - name: Print Clang version
+        run: clang --version
+
       - uses: actions/checkout@v3
       - name: Get dependencies
+        if: runner.os != 'Windows'
+        working-directory: ${{ env.HOME }}
         run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
           echo "$PWD/depot_tools" >> $GITHUB_PATH      
+      
+      - name: Get dependencies (Windows)
+        if: runner.os == 'Windows'
         working-directory: ${{ env.HOME }}
+        run: |
+          curl -L https://storage.googleapis.com/chrome-infra/depot_tools.zip -o depot_tools.zip
+          7z x depot_tools.zip -odepot_tools
+          echo "$PWD/depot_tools" >> $GITHUB_PATH
 
       - name: Fetch Dart SDK
         run: fetch dart
-
-      # - name: Configure build
-      #   run: ./tools/gn.py --mode release --arch x64 --sanitizer asan
-      #   working-directory: sdk
       
       - name: Build runtime
         run: ./tools/build.py --no-goma --mode release --arch x64 --sanitizer asan
@@ -58,8 +62,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: dart-asan-${{ runner.os }}
-          path: |
-            sdk/${{ matrix.out-dir }}/ReleaseASANX64/dart
-            sdk/${{ matrix.out-dir }}/ReleaseASANX64/dart_precompiled_runtime
-            sdk/${{ matrix.out-dir }}/ReleaseASANX64/dartdev.dart.snapshot
+          path: sdk/${{ matrix.out-dir }}/ReleaseASANX64/dart/exe.stripped
         
