@@ -24,11 +24,6 @@ jobs:
             out-dir: out
     name: Build ASan-enabled Dart runtime
     runs-on: ${{ matrix.host }}
-    # env:
-    #   ASAN_SYMBOLIZER_PATH: tools/buildtools/${{ matrix.prefix }}/clang/bin/llvm-symbolizer
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: Print Clang version
         run: clang --version
@@ -47,7 +42,7 @@ jobs:
         run: |
           curl -L https://storage.googleapis.com/chrome-infra/depot_tools.zip -o depot_tools.zip
           7z x depot_tools.zip -odepot_tools
-          echo "$PWD/depot_tools" >> $GITHUB_PATH
+          echo "$(pwd)/depot_tools" >> $env:GITHUB_PATH
 
       - name: Fetch Dart SDK
         run: fetch dart
