@@ -48,14 +48,12 @@ jobs:
         run: fetch dart
       
       - name: Build runtime
-        run: ./tools/build.py --no-goma --mode release --arch x64 --sanitizer asan
-          runtime runtime_precompiled
+        run: python3 ./tools/build.py --no-goma --mode release --arch x64 --sanitizer asan runtime
         working-directory: sdk
       
-      - run: ls -Rlah sdk/${{ matrix.out-dir }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dart-asan-${{ runner.os }}
-          path: sdk/${{ matrix.out-dir }}/ReleaseASANX64/dart/exe.stripped
+          path: sdk/${{ matrix.out-dir }}/ReleaseASANX64/exe.stripped
         
