@@ -30,23 +30,36 @@ jobs:
     runs-on: ${{ matrix.host }}
     env:
       ASAN_SYMBOLIZER_PATH: tools/buildtools/${{ matrix.prefix }}/clang/bin/llvm-symbolizer
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v3
       - name: Get dependencies
-        shell: bash
         run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          echo "$(pwd)/depot_tools" >> $GITHUB_PATH      
+          echo "$PWD/depot_tools" >> $GITHUB_PATH      
         working-directory: ${{ env.HOME }}
 
-      - run: fetch dart
-      - name: Configure build
-        run: ./tools/gn.py --mode release --arch x64 --sanitizer asan
-        working-directory: sdk
+      - name: Fetch Dart SDK
+        run: fetch dart
+
+      # - name: Configure build
+      #   run: ./tools/gn.py --mode release --arch x64 --sanitizer asan
+      #   working-directory: sdk
       
       - name: Build runtime
-        run: ./tools/build.py --no-goma --mode release --arch x64 runtime runtime_precompiled
+        run: ./tools/build.py --no-goma --mode release --arch x64 --sanitizer asan
+          runtime runtime_precompiled
         working-directory: sdk
       
       - run: ls -Rlah sdk/${{ matrix.out-dir }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dart-asan-${{ runner.os }}
+          path: |
+            sdk/${{ matrix.out-dir }}/ReleaseASANX64/dart
+            sdk/${{ matrix.out-dir }}/ReleaseASANX64/dart_precompiled_runtime
+            sdk/${{ matrix.out-dir }}/ReleaseASANX64/dartdev.dart.snapshot
         
